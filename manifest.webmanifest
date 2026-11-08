@@ -1,0 +1,15 @@
+
+{
+  "id": "/mis-compras/",
+  "name": "Mis Compras",
+  "short_name": "Mis Compras",
+  "description": "Control y auditoría de compras",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f4f8",
+  "theme_color": "#17365d"
+}
+
