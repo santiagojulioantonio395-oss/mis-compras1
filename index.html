@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#17365d">
 <title>Mis Compras</title>
+  <link rel="manifest" href="manifest.webmanifest">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f1f4f8;color:#202b3c;font-family:Arial,sans-serif}
@@ -397,6 +398,14 @@ alert("Registros borrados.");
 }
 
 actualizar();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(error => console.error("Error SW:", error));
+  });
+}
+</script>
 </script>
 </body>
 </html>
