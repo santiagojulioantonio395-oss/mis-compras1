@@ -1,0 +1,402 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17365d">
+<title>Mis Compras</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f4f8;color:#202b3c;font-family:Arial,sans-serif}
+header{background:#17365d;color:white;padding:20px 16px}
+header h1{margin:0;font-size:25px}
+header p{margin:6px 0 0;color:#dce7f5}
+main{max-width:700px;margin:auto;padding:14px}
+.card{background:white;padding:16px;border-radius:13px;margin-bottom:14px;box-shadow:0 2px 8px #0000000d}
+h2{font-size:18px;margin:0 0 13px}
+label{display:block;font-size:13px;font-weight:bold;margin:10px 0 5px}
+input,select{width:100%;padding:12px;border:1px solid #ccd4df;border-radius:8px;font-size:16px;background:white}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:8px;padding:13px;font-size:15px;font-weight:bold;cursor:pointer}
+.primary{background:#17365d;color:white;width:100%;margin-top:14px}
+.secondary{background:#e5edf7;color:#17365d}
+.danger{background:#fde8e8;color:#a32222}
+.item{border-bottom:1px solid #e5e9ef;padding:12px 0}
+.item:last-child{border:0}
+.small{font-size:13px;color:#657286;margin-top:5px}
+.money{font-weight:bold;color:#17365d}
+.total{font-size:25px;font-weight:bold;color:#17365d}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.actions button{flex:1}
+.note{font-size:12px;color:#667085;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+<h1>Mis Compras</h1>
+<p>Control y auditoría de compras</p>
+</header>
+<main>
+
+<section class="card">
+<h2>Registrar producto</h2>
+<label>Descripción del producto</label>
+<input id="producto" placeholder="Ej. Arroz, azúcar, manzana">
+
+<div class="grid">
+<div>
+<label>Cantidad</label>
+<input id="cantidad" type="number" step="any" inputmode="decimal" placeholder=".300">
+</div>
+<div>
+<label>Precio por unidad</label>
+<input id="precio" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+</div>
+</div>
+
+<div class="grid">
+<div>
+<label>Página</label>
+<input id="pagina" type="number" min="1" inputmode="numeric" value="1">
+</div>
+<div>
+<label>Categoría</label>
+<select id="categoria">
+<option>Abarrotes</option>
+<option>Frutas y verduras</option>
+<option>Carnes</option>
+<option>Lácteos</option>
+<option>Limpieza</option>
+<option>Higiene personal</option>
+<option>Bebidas</option>
+<option>Otros</option>
+</select>
+</div>
+</div>
+
+<p class="note">Puedes escribir cantidades como .300, .500, 1 o 2.</p>
+<div class="row">
+<span>Total del producto</span>
+<strong id="calculado" class="money">$0.00</strong>
+</div>
+<button class="primary" onclick="agregar()">＋ Guardar producto</button>
+</section>
+
+<section class="card">
+<div class="row">
+<h2>Productos registrados</h2>
+<strong id="conteo">0</strong>
+</div>
+<div id="lista"><p class="note">Todavía no hay productos registrados.</p></div>
+</section>
+
+<section class="card">
+<h2>Resumen de compras</h2>
+<div class="row">
+<span>Total de productos</span>
+<strong id="totalProductos">$0.00</strong>
+</div>
+<div class="row" style="margin-top:12px">
+<span>Productos registrados</span>
+<strong id="numeroProductos">0</strong>
+</div>
+<div class="row" style="margin-top:15px">
+<strong>Total de compra</strong>
+<span id="totalCompra" class="total">$0.00</span>
+</div>
+</section>
+
+<section class="card">
+<h2>Registro de pagos</h2>
+<label>Vales JASP ($)</label>
+<input id="jasp" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+<label>AFS ($)</label>
+<input id="afs" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+<label>Heber ($)</label>
+<input id="heber" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+<label>Banorte ($)</label>
+<input id="banorte" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+<div class="row" style="margin-top:15px">
+<strong>Total pagado</strong>
+<strong id="totalPagado" class="money">$0.00</strong>
+</div>
+<div class="row" style="margin-top:12px">
+<strong>Diferencia</strong>
+<strong id="diferencia">$0.00</strong>
+</div>
+</section>
+
+<section class="card">
+<h2>Reportes y respaldo</h2>
+<button class="primary" onclick="exportar()">Descargar reporte para Excel</button>
+<button class="secondary" style="width:100%;margin-top:9px" onclick="respaldo()">Respaldar información</button>
+<label>Recuperar respaldo</label>
+<input type="file" accept=".json" onchange="recuperar(event)">
+<button class="danger" style="width:100%;margin-top:12px" onclick="borrar()">Borrar todos los registros</button>
+<p class="note">Los datos se guardan en este navegador. Descarga respaldos periódicamente.</p>
+</section>
+</main>
+
+<script>
+
+const $=id=>document.getElementById(id);
+
+let productos=[];
+try{
+productos=JSON.parse(localStorage.getItem("misComprasProductos")||"[]");
+}catch(e){productos=[];}
+
+let pagos={jasp:0,afs:0,heber:0,banorte:0};
+
+try{
+pagos=JSON.parse(localStorage.getItem("misComprasPagos")||'{"jasp":0,"afs":0,"heber":0,"banorte":0}');
+}catch(e){}
+
+function formato(n){
+return Number(n||0).toLocaleString("es-MX",{
+style:"currency",currency:"MXN"
+});
+}
+
+function numero(id){
+return Math.max(0,Number($(id).value)||0);
+}
+
+function total(){
+return productos.reduce((s,p)=>s+p.total,0);
+}
+
+function totalPagos(){
+return ["jasp","afs","heber","banorte"]
+.reduce((s,id)=>s+numero(id),0);
+}
+
+function escapar(s){
+return String(s).replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",
+'"':"&quot;","'":"&#39;"
+}[c]));
+}
+
+function guardar(){
+localStorage.setItem("misComprasProductos",JSON.stringify(productos));
+actualizar();
+}
+
+function agregar(){
+let nombre=$("producto").value.trim();
+let cantidad=Number($("cantidad").value);
+let precio=Number($("precio").value);
+let pagina=Number($("pagina").value);
+
+if(!nombre){
+alert("Escribe la descripción del producto.");
+return;
+}
+if(!cantidad||cantidad<=0){
+alert("Escribe una cantidad válida.");
+return;
+}
+if(!precio||precio<=0){
+alert("Escribe un precio válido.");
+return;
+}
+if(!pagina||pagina<1){
+alert("Escribe el número de página.");
+return;
+}
+
+productos.push({
+nombre:nombre,
+cantidad:cantidad,
+precio:precio,
+pagina:pagina,
+categoria:$("categoria").value,
+total:Math.round(cantidad*precio*100)/100
+});
+
+guardar();
+
+$("producto").value="";
+$("cantidad").value="";
+$("precio").value="";
+$("producto").focus();
+}
+
+function eliminar(i){
+if(confirm("¿Eliminar este producto?")){
+productos.splice(i,1);
+guardar();
+}
+}
+
+function actualizar(){
+let t=total();
+let p=totalPagos();
+
+$("lista").innerHTML=productos.length
+?productos.map((x,i)=>`
+<div class="item">
+<div class="row">
+<strong>${i+1}. ${escapar(x.nombre)}</strong>
+<strong>${formato(x.total)}</strong>
+</div>
+<div class="small">
+Cantidad: ${x.cantidad} · Precio: ${formato(x.precio)}
+<br>Página: ${x.pagina} · ${escapar(x.categoria)}
+</div>
+<button class="danger" style="padding:7px 11px;margin-top:8px"
+onclick="eliminar(${i})">Eliminar</button>
+</div>`).join("")
+:'<p class="note">Todavía no hay productos registrados.</p>';
+
+$("conteo").textContent=productos.length;
+$("numeroProductos").textContent=productos.length;
+$("totalProductos").textContent=formato(t);
+$("totalCompra").textContent=formato(t);
+$("totalPagado").textContent=formato(p);
+$("diferencia").textContent=formato(p-t);
+$("diferencia").style.color=p-t<0?"#b42318":"#16803c";
+
+localStorage.setItem("misComprasPagos",JSON.stringify({
+jasp:$("jasp").value,
+afs:$("afs").value,
+heber:$("heber").value,
+banorte:$("banorte").value
+}));
+}
+
+function actualizarCalculo(){
+$("calculado").textContent=formato(
+numero("cantidad")*numero("precio")
+);
+}
+
+["cantidad","precio"].forEach(id=>{
+$(id).addEventListener("input",actualizarCalculo);
+});
+
+["jasp","afs","heber","banorte"].forEach(id=>{
+$(id).value=pagos[id]||"";
+$(id).addEventListener("input",actualizar);
+});
+
+function csv(valor){
+return '"'+String(valor??"").replace(/"/g,'""')+'"';
+}
+
+function exportar(){
+let filas=[
+["REPORTE MIS COMPRAS"],
+["Descripción","Cantidad","Precio","Total","Página","Categoría"]
+];
+
+productos.forEach(p=>{
+filas.push([
+p.nombre,p.cantidad,p.precio,p.total,p.pagina,p.categoria
+]);
+});
+
+filas.push([]);
+filas.push(["RESUMEN DE COMPRAS"]);
+filas.push(["Total de compra",total()]);
+filas.push([]);
+filas.push(["FORMA DE PAGO","IMPORTE"]);
+filas.push(["JASP",numero("jasp")]);
+filas.push(["AFS",numero("afs")]);
+filas.push(["Heber",numero("heber")]);
+filas.push(["Banorte",numero("banorte")]);
+filas.push(["TOTAL PAGADO",totalPagos()]);
+filas.push(["DIFERENCIA",totalPagos()-total()]);
+
+let contenido="\ufeff"+
+filas.map(f=>f.map(csv).join(",")).join("\r\n");
+
+let blob=new Blob([contenido],{
+type:"text/csv;charset=utf-8;"
+});
+
+let url=URL.createObjectURL(blob);
+let a=document.createElement("a");
+a.href=url;
+a.download="Mis_Compras.csv";
+a.click();
+URL.revokeObjectURL(url);
+}
+
+function respaldo(){
+let datos={
+productos:productos,
+pagos:{
+jasp:$("jasp").value,
+afs:$("afs").value,
+heber:$("heber").value,
+banorte:$("banorte").value
+}
+};
+
+let blob=new Blob(
+[JSON.stringify(datos,null,2)],
+{type:"application/json"}
+);
+
+let url=URL.createObjectURL(blob);
+let a=document.createElement("a");
+a.href=url;
+a.download="Respaldo_Mis_Compras.json";
+a.click();
+URL.revokeObjectURL(url);
+}
+
+function recuperar(evento){
+let archivo=evento.target.files[0];
+if(!archivo)return;
+
+let lector=new FileReader();
+
+lector.onload=function(){
+try{
+let datos=JSON.parse(lector.result);
+
+if(!Array.isArray(datos.productos)){
+throw new Error("Respaldo inválido");
+}
+
+productos=datos.productos;
+
+let p=datos.pagos||{};
+["jasp","afs","heber","banorte"].forEach(id=>{
+$(id).value=p[id]||0;
+});
+
+guardar();
+alert("Respaldo recuperado correctamente.");
+
+}catch(e){
+alert("No se pudo recuperar el respaldo.");
+}
+};
+
+lector.readAsText(archivo);
+evento.target.value="";
+}
+
+function borrar(){
+if(!confirm("¿Seguro que quieres borrar todos los productos y pagos?"))return;
+
+productos=[];
+["jasp","afs","heber","banorte"].forEach(id=>{
+$(id).value="";
+});
+
+guardar();
+localStorage.removeItem("misComprasPagos");
+alert("Registros borrados.");
+}
+
+actualizar();
+</script>
+</body>
+</html>
